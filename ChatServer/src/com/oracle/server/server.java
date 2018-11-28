@@ -114,6 +114,25 @@ public class server {
 								allSocket.get(testname).flush();
 							}
 						}
+					}else if(Message.getType().equals("teammessage")) {
+						System.out.println("teammessage" + Message);
+						Message.setTime(new Date().toString());
+//						message sendmessage = (message) in.readObject();
+//						user touesr=Message.getTo();
+//						System.out.println(Message.getTo().getZhanghu());
+//						System.out.println(allSocket.size());
+						
+						Set<String> set=allSocket.keySet();
+						Iterator<String> it=set.iterator();
+						while(it.hasNext()) {   //遍历所有用户，发送给所有在线用户
+							String testname=it.next();
+							if(!Message.getFrom().getZhanghu().equals(testname)) {
+								System.out.println("找到要联系的人啦");
+								System.out.println(allSocket.get(testname));
+								allSocket.get(testname).writeObject(Message);
+								allSocket.get(testname).flush();
+							}
+						}
 					}
 				}
 			} catch (Exception e) {
