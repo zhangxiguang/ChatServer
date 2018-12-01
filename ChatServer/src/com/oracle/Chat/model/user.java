@@ -7,8 +7,15 @@ public class user implements Serializable{
 	private String password;
 	private String zhanghu;
 	private String touxiangpath;
+	private Boolean status=false;
 	
 	
+	public Boolean getStatus() {
+		return status;
+	}
+	public void setStatus(Boolean status) {
+		this.status = status;
+	}
 	public user(String zhanghu) {
 		super();
 		this.zhanghu = zhanghu;
@@ -20,6 +27,7 @@ public class user implements Serializable{
 		this.zhanghu = zhanghu;
 		this.touxiangpath = touxiangpath;
 	}
+	
 	public String getZhanghu() {
 		return zhanghu;
 	}
@@ -63,6 +71,7 @@ public class user implements Serializable{
 		return "user [username=" + username + ", password=" + password + ", zhanghu=" + zhanghu + ", touxiangpath="
 				+ touxiangpath + "]";
 	}
+	
 //	@Override
 //	public int hashCode() {
 //		final int prime = 31;

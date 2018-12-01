@@ -1,7 +1,12 @@
 package com.oracle.server;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
@@ -16,7 +21,7 @@ import com.oracle.Chat.model.user;
 public class server {
 
 	private ServerSocket server;
-	private static HashMap<String, ObjectOutputStream> allSocket;  //账户+输出流
+	private static HashMap<String, ObjectOutputStream> allSocket; // 账户+输出流
 
 	public server() {
 		try {
@@ -35,7 +40,7 @@ public class server {
 	}
 
 	public static void main(String[] args) {
-		allSocket=new HashMap<>();
+		allSocket = new HashMap<>();
 		new server();
 	}
 
@@ -73,7 +78,7 @@ public class server {
 						out.flush();
 					} else if (Message.getType().equals("login")) {
 						// 1.根据传过来的登陆信息查询数据库返回查询的结果
-//						System.out.println("login message" + Message);
+						System.out.println("login message" + Message);
 						boolean loginresult = datecontrol.login(Message.getFrom());
 						System.out.println(loginresult);
 
@@ -81,57 +86,124 @@ public class server {
 						// 除了要将登陆的用户资料查询返回给客户端之外还要讲所有注册的用户列表这个集合数据返回给客户端
 						message loginResult = new message();
 						loginResult.setContent(loginresult ? "success" : "false");
-						if (loginResult.getContent().equals("success")) {
-							System.out.println(Message.getFrom());
-							System.out.println(datecontrol.loginUser(Message.getFrom()).getUsername());
-							allSocket.put(datecontrol.loginUser(Message.getFrom()).getZhanghu(), out);
-							System.out.println(allSocket);
-						}
-						user logineduser = datecontrol.loginUser(Message.getFrom());
-						List<user> alluesr = datecontrol.allusername();
-						loginResult.setAllUser(alluesr);
-						loginResult.setFrom(logineduser);
-						out.writeObject(loginResult);
-						out.flush();
-						
+						if (loginResult.getContent().equals("success")) { // 登陆成功，将其加入hashmap
+							Message.getFrom().setStatus(true);
+							if(allSocket.containsKey(datecontrol.loginUser(Message.getFrom()).getZhanghu())) {
+								loginResult.setContent("false");
+								out.writeObject(loginResult);
+								out.flush();
+							}else {
+								allSocket.put(datecontrol.loginUser(Message.getFrom()).getZhanghu(), out);
 
-					} else if (Message.getType().equals("sendmessage")) {
-						System.out.println("sendmessage" + Message);
-//						message sendmessage = (message) in.readObject();
-						Message.setTime(new Date().toString());
-//						user touesr=Message.getTo();
-						System.out.println(Message.getTo().getZhanghu());
-						System.out.println(allSocket.size());
-						
-						Set<String> set=allSocket.keySet();
-						Iterator<String> it=set.iterator();
-						while(it.hasNext()) {
-							String testname=it.next();
-							if(Message.getTo().getZhanghu().equals(testname)) {
-								System.out.println("找到要联系的人啦");
-								System.out.println(allSocket.get(testname));
-								allSocket.get(testname).writeObject(Message);
-								allSocket.get(testname).flush();
+								user logineduser = datecontrol.loginUser(Message.getFrom());
+								System.out.println(logineduser);
+								List<user> alluesr = datecontrol.allusername();
+								loginResult.setAllUser(alluesr);
+								loginResult.setFrom(logineduser);
+								out.writeObject(loginResult);
+								out.flush();
+
+								File files = new File("outlinemessage/onemessage");
+								File[] allFiles = files.listFiles();
+								for (int i = 0; i < allFiles.length; i++) {
+									ObjectInputStream noappectmessage = new ObjectInputStream(
+											new FileInputStream(allFiles[i]));
+									message noAcceptmessage = (message) noappectmessage.readObject();
+									noAcceptmessage.setType("sendmessage");
+									if (Message.getFrom().getZhanghu().equals(noAcceptmessage.getTo().getZhanghu())) {
+										out.writeObject(noAcceptmessage);
+										out.flush();
+										noappectmessage.close();
+										System.out.println("未读信息已发出，删除文件");
+										System.out.println(allFiles[i]);
+										File delete = new File(allFiles[i].getPath());
+										System.out.println(delete);
+										if (delete.exists()) {
+											delete.delete();
+											System.out.println("我删除了");
+										}
+									}
+
+								}
 							}
+
+						} else {
+							out.writeObject(loginResult);
+							out.flush();
 						}
-					}else if(Message.getType().equals("teammessage")) {
+					} else if (Message.getType().equals("sendmessage")) {
+						// 存储聊天记录
+//						File onemessage = new File("allmessage/onemessage", Message.getFrom().getUsername() + ".txt");
+//						onemessage.createNewFile();
+//						ObjectOutputStream outOnemessage = new ObjectOutputStream(
+//								new FileOutputStream(onemessage, true));
+//						outOnemessage.writeObject(Message);
+
+						System.out.println("sendmessage" + Message);
+						Message.setTime(new Date().toString());
+						
+						if(allSocket.containsKey(Message.getTo().getZhanghu())) {
+							allSocket.get(Message.getTo().getZhanghu()).writeObject(Message);
+							allSocket.get(Message.getTo().getZhanghu()).flush();
+						}else {
+							System.out.println("联系人不在线，存储消息");
+							File lineonemessage = new File("outlinemessage/onemessage",
+									Message.getTo().getZhanghu() + ".txt");
+							lineonemessage.createNewFile();
+							ObjectOutputStream outlineonemessage = new ObjectOutputStream(
+									new FileOutputStream(lineonemessage, true));
+							outlineonemessage.writeObject(Message);
+							outlineonemessage.flush();
+						}
+						
+						
+					} else if (Message.getType().equals("teammessage")) {
 						System.out.println("teammessage" + Message);
 						Message.setTime(new Date().toString());
-//						message sendmessage = (message) in.readObject();
-//						user touesr=Message.getTo();
-//						System.out.println(Message.getTo().getZhanghu());
-//						System.out.println(allSocket.size());
-						
-						Set<String> set=allSocket.keySet();
-						Iterator<String> it=set.iterator();
-						while(it.hasNext()) {   //遍历所有用户，发送给所有在线用户
-							String testname=it.next();
-							if(!Message.getFrom().getZhanghu().equals(testname)) {
-								System.out.println("找到要联系的人啦");
+
+						Set<String> set = allSocket.keySet();
+						Iterator<String> it = set.iterator();
+						while (it.hasNext()) { // 遍历所有用户，发送给所有在线用户
+							String testname = it.next();
+							if (!Message.getFrom().getZhanghu().equals(testname)) {
 								System.out.println(allSocket.get(testname));
 								allSocket.get(testname).writeObject(Message);
 								allSocket.get(testname).flush();
 							}
+						}
+					} else if (Message.getType().equals("modusermessage")) {
+						user modeuesr = datecontrol.modUser(Message.getTo());
+//							System.out.println(modeuesr);
+						Message.setFrom(modeuesr);
+
+						message updatemesssage = new message();
+						updatemesssage.setType("updatemessage");
+						Set<String> set = allSocket.keySet();
+						Iterator<String> it = set.iterator();
+						while (it.hasNext()) {
+							String testname = it.next();
+							if (Message.getFrom().getZhanghu().equals(testname)) {
+								allSocket.get(testname).writeObject(Message);
+								allSocket.get(testname).flush();
+							} else {
+								System.out.println("更他其他用户显示信息");
+								allSocket.get(testname).writeObject(updatemesssage);
+								allSocket.get(testname).flush();
+							}
+						}
+
+//						out.writeObject(Message);
+//						out.flush();
+					} else if (Message.getType().equals("exitmessage")) {
+						System.out.println(Message.getFrom().getZhanghu());
+						allSocket.remove(Message.getFrom().getZhanghu());
+						System.out.println(Message.getFrom().getZhanghu() + "已下线");
+
+						System.out.println(allSocket.size()+"人在线");
+						Set<String> set = allSocket.keySet();
+						Iterator<String> it = set.iterator();
+						while (it.hasNext()) {
+							System.out.println(it.next().toString());
 						}
 					}
 				}
@@ -139,6 +211,5 @@ public class server {
 				e.printStackTrace();
 			}
 		}
-
 	}
 }

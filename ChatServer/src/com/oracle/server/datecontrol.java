@@ -65,8 +65,8 @@ public class datecontrol implements Serializable {
 						.equals(allusername[i].getName().substring(0, allusername[i].getName().length() - 4))) {
 					ObjectInputStream inlogin = new ObjectInputStream(new FileInputStream(allusername[i]));
 					user loginuesr = (user) inlogin.readObject();
-//					System.out.println("找到文件啦");
-//					System.out.println(loginuesr);
+					System.out.println(user.getZhanghu());
+					System.out.println(loginuesr.getZhanghu());
 					if (user.getZhanghu().equals(loginuesr.getZhanghu())
 							&& user.getPassword().equals(loginuesr.getPassword())) {
 
@@ -112,6 +112,41 @@ public class datecontrol implements Serializable {
 				try {
 					loginuesr = (user) in.readObject();
 					if (user.getZhanghu().equals(loginuesr.getZhanghu())) {
+						return loginuesr;
+					}
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return user;
+	}
+	
+	public static user modUser(user user) { // 修改用户信息
+		File alluser = new File("userdata");
+		File[] allusers = alluser.listFiles();
+		for (int i = 0; i < allusers.length; i++) {
+			ObjectInputStream in;
+			try {
+				in = new ObjectInputStream(new FileInputStream(allusers[i]));
+				user loginuesr;
+				try {
+					loginuesr = (user) in.readObject();
+					if (user.getZhanghu().equals(loginuesr.getZhanghu())) {
+						loginuesr.setUsername(user.getUsername());
+						loginuesr.setPassword(user.getPassword());
+						loginuesr.setTouxiangpath(user.getTouxiangpath());
+						System.out.println(loginuesr);
+						
+						File userfile = new File("userdata/" + loginuesr.getZhanghu() + ".txt");
+						ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(userfile));
+						out.writeObject(user);
+						out.flush();
+						
 						return loginuesr;
 					}
 				} catch (ClassNotFoundException e) {
